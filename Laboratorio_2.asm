@@ -23,6 +23,9 @@
 		# Leer clave corta
 		jal leerClaveCorta
 		
+		# Crear clave extendida
+		jal crearClaveExtendida
+		
 		# Mostrar mensaje leido
 		jal mostrarMensaje
 		
@@ -122,13 +125,84 @@
 	
     			beq $t1, $t2, reemplazar
 
-    			j salir
+    			j terminarAjuste
 
 		reemplazar:
     			sb $zero, 0($t0)
 
-		salir:
+		terminarAjuste:
 		
+        jr $ra
+        
+        
+        crearClaveExtendida:
+        
+        	lw $s0, longitudMensaje
+        	lw $s1, longitudClaveCorta
+        	
+        	la $t3, claveCorta
+        	la $t4, mensaje
+        	la $t5, claveExtendida
+        	
+        	li $t0, 0
+        	li $t2, 0
+        	
+        	addi $sp, $sp, -4
+		sw $ra, 0($sp)
+    		
+    		jal copiarClaveCorta
+    		
+    		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+		
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+    		
+    		jal completarClaveExtendida
+    		
+    		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+        
+        jr $ra
+        
+        
+        copiarClaveCorta:
+        
+        	recorrerClaveCorta:
+        	
+        		beq $t0, $s1, terminarCopiaClave
+    			lb $t6, 0($t3)
+    			sb $t6, 0($t5)
+    			addi $t3, $t3, 1
+    			addi $t5, $t5, 1
+    			addi $t0, $t0, 1
+    			addi $t2, $t2, 1
+    			
+    			j recorrerClaveCorta
+    			
+    		terminarCopiaClave:
+        
+        jr $ra
+        
+        
+        completarClaveExtendida:
+        
+        	sub $t7, $s0, $s1
+    		li $t1, 0
+    		
+    		recorrerTexto:
+    		
+    			beq $t1, $t7, terminarCompletado
+
+    			lb $t6, 0($t4)
+    			sb $t6, 0($t5)
+    			addi $t4, $t4, 1
+    			addi $t5, $t5, 1
+    			addi $t1, $t1, 1
+    			j recorrerTexto
+
+		terminarCompletado:
+        
         jr $ra
         
         
@@ -149,6 +223,10 @@
 		
 		lw $a0, longitudClaveCorta
 		li $v0, 1
+		syscall
+		
+		li $v0, 4
+		la $a0, claveExtendida
 		syscall
         	
     	jr $ra
