@@ -10,6 +10,8 @@
 	
 	claveExtendida: .space 1024
 	
+	mensajeCifrado: .space 1024
+	
 	textoDeErrorDocumento: .asciiz "No se pudo leer el documento"
 
 .text
@@ -25,6 +27,9 @@
 		
 		# Crear clave extendida
 		jal crearClaveExtendida
+		
+		# Cifrar mensaje
+		jal cifrarMensaje
 		
 		# Mostrar mensaje leido
 		jal mostrarMensaje
@@ -145,6 +150,7 @@
         	la $t5, claveExtendida
         	
         	li $t0, 0
+        	li $t1, 0
         	li $t2, 0
         	
         	addi $sp, $sp, -4
@@ -188,9 +194,8 @@
         completarClaveExtendida:
         
         	sub $t7, $s0, $s1
-    		li $t1, 0
     		
-    		recorrerTexto:
+    		recorrerMensaje:
     		
     			beq $t1, $t7, terminarCompletado
 
@@ -199,9 +204,46 @@
     			addi $t4, $t4, 1
     			addi $t5, $t5, 1
     			addi $t1, $t1, 1
-    			j recorrerTexto
+    			j recorrerMensaje
 
 		terminarCompletado:
+        
+        jr $ra
+        
+        
+        cifrarMensaje:
+        
+        	la $t0, mensaje
+    		la $t1, claveExtendida
+    		la $t2, mensajeCifrado
+    		lw $t3, longitudMensaje
+    		li $t4, 0
+    		
+    		cifrar:
+    			beq $t4, $t3, terminarCifrado
+
+    			lb $t5, 0($t0)
+    			lb $t6, 0($t1)
+
+    			# Convertir de ASCII a 0–25
+    			li $t7, 'a'
+   			sub $t5, $t5, $t7        # m = m - 'a'
+    			sub $t6, $t6, $t7        # k = k - 'a'
+
+    			add $t8, $t5, $t6        # m + k
+    			li $t9, 26
+    			rem $t8, $t8, $t9        # (m + k) mod 26
+
+    			add $t8, $t8, $t7        # volver a ASCII: c + 'a'
+    			sb $t8, 0($t2)           # guardar carácter cifrado en buffer
+
+    			addi $t0, $t0, 1
+    			addi $t1, $t1, 1
+    			addi $t2, $t2, 1
+    			addi $t4, $t4, 1
+    			j cifrar
+
+		terminarCifrado:
         
         jr $ra
         
@@ -227,6 +269,10 @@
 		
 		li $v0, 4
 		la $a0, claveExtendida
+		syscall
+		
+		li $v0, 4
+		la $a0, mensajeCifrado
 		syscall
         	
     	jr $ra
