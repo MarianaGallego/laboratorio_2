@@ -10,6 +10,7 @@
 	
 	claveExtendida: .space 1024
 	
+	outputFile: .asciiz "C:/Users/maria/OneDrive - Universidad de Antioquia/Escritorio/Arquitectura/2025 - 1/Arquitectura_Laboratorio 2/criptogram.txt"
 	mensajeCifrado: .space 1024
 	
 	textoDeErrorDocumento: .asciiz "No se pudo leer el documento"
@@ -30,6 +31,9 @@
 		
 		# Cifrar mensaje
 		jal cifrarMensaje
+		
+		# Escribir mensaje cifrado
+		jal escribirMensajeCifrado
 		
 		# Mostrar mensaje leido
 		jal mostrarMensaje
@@ -244,6 +248,33 @@
     			j cifrar
 
 		terminarCifrado:
+        
+        jr $ra
+        
+        
+        escribirMensajeCifrado:
+        
+        	#--------------------------- Abrir archivo --------------------------#
+        	li $v0, 13
+    		la $a0, outputFile
+    		li $a1, 1               # flag = 1 para escritura
+    		li $a2, 0 
+    		syscall
+    		move $s0, $v0
+    		
+    		bltz $s0, errorHandlerDocumento
+    		
+    		#--------------------------- Escribir mensaje cifrado ---------------------------#
+    		li $v0, 15
+    		move $a0, $s0
+    		la $a1, mensajeCifrado
+    		lw $a2, longitudMensaje
+    		syscall
+    		
+    		#-------------------------- Cerrar archivo --------------------------#
+    		li $v0, 16
+        	move $a0, $s0
+        	syscall
         
         jr $ra
         
