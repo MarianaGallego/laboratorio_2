@@ -5,7 +5,7 @@
 	longitudMensaje: .word 0
 	
 	textoClaveCorta: .asciiz "Ingrese la palabra que desea utilizar como clave corta:   "
-	claveCorta: .space 1023
+	claveCorta: .space 1024
 	longitudClaveCorta: .word 0
 	
 	claveExtendida: .space 1024
@@ -57,10 +57,6 @@
 		la $a3, mensajeDecifrado
 		jal escribir
 		
-		
-		# Mostrar mensaje leido
-		jal mostrarMensaje
-		
 	li $v0, 10
 	syscall
 		
@@ -107,7 +103,7 @@
 		
 		li $v0, 8
 		la $a0, claveCorta
-		li $a1, 1023
+		li $a1, 1024
 		syscall
 		
 		addi $sp, $sp, -4
