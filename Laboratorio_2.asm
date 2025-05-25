@@ -300,37 +300,37 @@
         
         decifrarMensaje:
         
-        	la $t0, mensajeCifrado     # Dirección del mensaje cifrado
-    		la $t1, claveCorta         # Dirección de la clave corta
-    		la $t2, mensajeDecifrado   # Dirección para guardar mensaje descifrado
-    		la $t3, claveExtendida         # Puntero que recorrerá la clave extendida
-    		li $t4, 0                  # Contador de posición (i)
+        	la $t0, mensajeCifrado
+    		la $t1, claveCorta
+    		la $t2, mensajeDecifrado
+    		la $t3, claveExtendida
+    		li $t4, 0                  # Contador
     		
-    		loop:
-    			lb $t5, 0($t0)             # Cargar caracter cifrado
-    			beq $t5, 0, end            # Si es fin de cadena, terminar
+    		proceso:
+    			lb $t5, 0($t0)
+    			beq $t5, 0, terminarDecifrado
 
-   			 # Obtener c = mensajeCifrado[i] - 'a'
-    			li $t9, 97                 # ASCII de 'a'
-    			sub $t5, $t5, $t9          # c = c - 97
+   			# Obtener c = mensajeCifrado[i] - 'a'
+    			li $t9, 97
+    			sub $t5, $t5, $t9
 
     			# Cargar caracter de la clave extendida
-    			lb $t6, 0($t3)             # k = claveExtendida[i]
-    			beq $t6, 0, useDescifrado  # Si fin de clave corta, usar mensajePlano como clave extendida
+    			lb $t6, 0($t3)
+    			beq $t6, 0, recorrerMensajeCifrado
 
-    			sub $t6, $t6, $t9          # k = k - 97
+    			sub $t6, $t6, $t9
 
-    			j doDecrypt
+    			j decifrar
     			
-    		useDescifrado:
-   			# Leer desde mensajePlano (caracter ya descifrado)
+    		recorrerMensajeCifrado:
+   			# Leer desde mensaje
     			move $t7, $t2
-    			add $t7, $t7, $t4          # mensajePlano[i]
+    			add $t7, $t7, $t4
     			lb $t6, 0($t7)
     			sub $t6, $t6, $t9
     			
-    		doDecrypt:
-    			# p = (c - k + 26) % 26
+    		decifrar:
+    			# p = (c - k + 26) mod 26
     			sub $t7, $t5, $t6
     			addi $t7, $t7, 26
     			li $t8, 26
@@ -339,18 +339,17 @@
     			# Convertir p a caracter: p + 97
     			add $t7, $t7, $t9
 
-    			# Guardar en mensajePlano[i]
+    			# Guardar en mensaje[i]
     			sb $t7, 0($t2)
 
-    			# Avanzar punteros
-    			addi $t0, $t0, 1           # mensajeCifrado++
-    			addi $t2, $t2, 1           # mensajePlano++
-    			addi $t3, $t3, 1           # claveExtendida++
-    			addi $t4, $t4, 1           # i++
+    			addi $t0, $t0, 1
+    			addi $t2, $t2, 1
+    			addi $t3, $t3, 1
+    			addi $t4, $t4, 1
 
-    			j loop
+    			j proceso
     			
-    		end:
+    		terminarDecifrado:
         
         jr $ra
         
