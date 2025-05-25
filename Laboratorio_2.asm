@@ -13,11 +13,16 @@
 	outputFile: .asciiz "C:/Users/maria/OneDrive - Universidad de Antioquia/Escritorio/Arquitectura/2025 - 1/Arquitectura_Laboratorio 2/criptogram.txt"
 	mensajeCifrado: .space 1024
 	
+	decodedOutputFile: .asciiz "C:/Users/maria/OneDrive - Universidad de Antioquia/Escritorio/Arquitectura/2025 - 1/Arquitectura_Laboratorio 2/decoded.txt"
+	mensajeDecifrado: .space 1024
+	
 	textoDeErrorDocumento: .asciiz "No se pudo leer el documento"
 
 .text
 
 	main:
+	
+		#--------------------------- Cifrado --------------------------#
 	
 		# Leer mensaje de inputFile
 		la $a3, inputFile
@@ -34,6 +39,20 @@
 		
 		# Escribir mensaje cifrado
 		jal escribirMensajeCifrado
+		
+		
+		#--------------------------- Decifrado --------------------------#
+		
+		# Leer mensaje de outputFile
+		la $a3, outputFile
+		jal leerMensaje
+		
+		# Decifrar mensaje
+		jal decifrarMensaje
+		
+		# Escribir mensaje decifrado
+		jal escribirMensajeDecifrado
+		
 		
 		# Mostrar mensaje leido
 		jal mostrarMensaje
@@ -257,7 +276,7 @@
         	#--------------------------- Abrir archivo --------------------------#
         	li $v0, 13
     		la $a0, outputFile
-    		li $a1, 1               # flag = 1 para escritura
+    		li $a1, 1               # 1 para escritura
     		li $a2, 0 
     		syscall
     		move $s0, $v0
@@ -268,6 +287,90 @@
     		li $v0, 15
     		move $a0, $s0
     		la $a1, mensajeCifrado
+    		lw $a2, longitudMensaje
+    		syscall
+    		
+    		#-------------------------- Cerrar archivo --------------------------#
+    		li $v0, 16
+        	move $a0, $s0
+        	syscall
+        
+        jr $ra
+        
+        
+        decifrarMensaje:
+        
+        	la $t0, mensajeCifrado     # Dirección del mensaje cifrado
+    		la $t1, claveCorta         # Dirección de la clave corta
+    		la $t2, mensajeDecifrado   # Dirección para guardar mensaje descifrado
+    		la $t3, claveExtendida         # Puntero que recorrerá la clave extendida
+    		li $t4, 0                  # Contador de posición (i)
+    		
+    		loop:
+    			lb $t5, 0($t0)             # Cargar caracter cifrado
+    			beq $t5, 0, end            # Si es fin de cadena, terminar
+
+   			 # Obtener c = mensajeCifrado[i] - 'a'
+    			li $t9, 97                 # ASCII de 'a'
+    			sub $t5, $t5, $t9          # c = c - 97
+
+    			# Cargar caracter de la clave extendida
+    			lb $t6, 0($t3)             # k = claveExtendida[i]
+    			beq $t6, 0, useDescifrado  # Si fin de clave corta, usar mensajePlano como clave extendida
+
+    			sub $t6, $t6, $t9          # k = k - 97
+
+    			j doDecrypt
+    			
+    		useDescifrado:
+   			# Leer desde mensajePlano (caracter ya descifrado)
+    			move $t7, $t2
+    			add $t7, $t7, $t4          # mensajePlano[i]
+    			lb $t6, 0($t7)
+    			sub $t6, $t6, $t9
+    			
+    		doDecrypt:
+    			# p = (c - k + 26) % 26
+    			sub $t7, $t5, $t6
+    			addi $t7, $t7, 26
+    			li $t8, 26
+    			rem $t7, $t7, $t8          # p mod 26
+
+    			# Convertir p a caracter: p + 97
+    			add $t7, $t7, $t9
+
+    			# Guardar en mensajePlano[i]
+    			sb $t7, 0($t2)
+
+    			# Avanzar punteros
+    			addi $t0, $t0, 1           # mensajeCifrado++
+    			addi $t2, $t2, 1           # mensajePlano++
+    			addi $t3, $t3, 1           # claveExtendida++
+    			addi $t4, $t4, 1           # i++
+
+    			j loop
+    			
+    		end:
+        
+        jr $ra
+        
+        
+        escribirMensajeDecifrado:
+        
+        	#--------------------------- Abrir archivo --------------------------#
+        	li $v0, 13
+    		la $a0, decodedOutputFile
+    		li $a1, 1               # 1 para escritura
+    		li $a2, 0 
+    		syscall
+    		move $s0, $v0
+    		
+    		bltz $s0, errorHandlerDocumento
+    		
+    		#--------------------------- Escribir mensaje cifrado ---------------------------#
+    		li $v0, 15
+    		move $a0, $s0
+    		la $a1, mensajeDecifrado
     		lw $a2, longitudMensaje
     		syscall
     		
