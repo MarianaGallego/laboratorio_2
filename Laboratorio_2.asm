@@ -251,23 +251,54 @@
 
     			lb $t5, 0($t0)
     			lb $t6, 0($t1)
+    			
+    			sub $s0, $t5, 97
+    			
+    			#------------ Validar mayúsculas y minúsculas ------------#
+    			slt $s1, $s0, $zero # si $s0 < 0 (minuscula), entonces $s1 = 1
+    			
+    			bne $s1, $zero, elseCondicionalEncriptar # salta si es mayuscula
+    			
+    				# Convertir de ASCII a 0–25
+    				li $t7, 'a'
+   				sub $t5, $t5, $t7        # m = m - 'a'
+    				sub $t6, $t6, $t7        # k = k - 'a'
 
-    			# Convertir de ASCII a 0–25
-    			li $t7, 'a'
-   			sub $t5, $t5, $t7        # m = m - 'a'
-    			sub $t6, $t6, $t7        # k = k - 'a'
+    				add $t8, $t5, $t6        # m + k
+    				li $t9, 26
+    				rem $t8, $t8, $t9        # (m + k) mod 26
 
-    			add $t8, $t5, $t6        # m + k
-    			li $t9, 26
-    			rem $t8, $t8, $t9        # (m + k) mod 26
+    				add $t8, $t8, $t7        # volver a ASCII: c + 'a'
+    				sb $t8, 0($t2)           # guardar carácter cifrado en buffer
 
-    			add $t8, $t8, $t7        # volver a ASCII: c + 'a'
-    			sb $t8, 0($t2)           # guardar carácter cifrado en buffer
+    				addi $t0, $t0, 1
+    				addi $t1, $t1, 1
+    				addi $t2, $t2, 1
+    				addi $t4, $t4, 1
+    			
+    			j cifrar
+    			
+    			elseCondicionalEncriptar:
+    			
+    				# Convertir de ASCII a 0–25
+    				li $t7, 'A'
+   				sub $t5, $t5, $t7        # m = m - 'a'
+    				sub $t6, $t6, $t7        # k = k - 'a'
 
-    			addi $t0, $t0, 1
-    			addi $t1, $t1, 1
-    			addi $t2, $t2, 1
-    			addi $t4, $t4, 1
+    				add $t8, $t5, $t6        # m + k
+    				li $t9, 26
+    				rem $t8, $t8, $t9        # (m + k) mod 26
+    				add $t8, $t8, $t9
+				rem $t8, $t8, $t9     	# asegúrate que el resultado está en [0–25]
+
+    				add $t8, $t8, $t7        # volver a ASCII: c + 'a'
+    				sb $t8, 0($t2)           # guardar carácter cifrado en buffer
+
+    				addi $t0, $t0, 1
+    				addi $t1, $t1, 1
+    				addi $t2, $t2, 1
+    				addi $t4, $t4, 1
+    			
     			j cifrar
 
 		terminarCifrado:
@@ -313,18 +344,39 @@
     		proceso:
     			lb $t5, 0($t0)
     			beq $t5, 0, terminarDecifrado
+    			
+    			sub $s0, $t5, 97
+    			
+    			#------------ Validar mayúsculas y minúsculas ------------#
+    			slt $s1, $s0, $zero # si $s0 < 0 (minuscula), entonces $s1 = 1
+    			
+    			bne $s1, $zero, elseCondicionalDesencriptar # salta si es mayuscula
+    			
+   				# Obtener c = mensajeCifrado[i] - 'a'
+    				li $t9, 97
+    				sub $t5, $t5, $t9
 
-   			# Obtener c = mensajeCifrado[i] - 'a'
-    			li $t9, 97
-    			sub $t5, $t5, $t9
+    				# Cargar caracter de la clave extendida
+    				lb $t6, 0($t3)
+    				beq $t6, 0, recorrerMensajeCifrado
 
-    			# Cargar caracter de la clave extendida
-    			lb $t6, 0($t3)
-    			beq $t6, 0, recorrerMensajeCifrado
+    				sub $t6, $t6, $t9
 
-    			sub $t6, $t6, $t9
+    				j decifrar
+    			
+    			elseCondicionalDesencriptar:
+    			
+    				# Obtener c = mensajeCifrado[i] - 'A'
+    				li $t9, 65
+    				sub $t5, $t5, $t9
 
-    			j decifrar
+    				# Cargar caracter de la clave extendida
+    				lb $t6, 0($t3)
+    				beq $t6, 0, recorrerMensajeCifrado
+
+    				sub $t6, $t6, $t9
+    				
+    				j decifrar
     			
     		recorrerMensajeCifrado:
    			# Leer desde mensaje
@@ -339,8 +391,9 @@
     			addi $t7, $t7, 26
     			li $t8, 26
     			rem $t7, $t7, $t8          # p mod 26
+    			
 
-    			# Convertir p a caracter: p + 97
+    			# Convertir p a caracter: p + 97 o p + 65
     			add $t7, $t7, $t9
 
     			# Guardar en mensaje[i]
