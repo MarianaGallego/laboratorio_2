@@ -38,7 +38,9 @@
 		jal cifrarMensaje
 		
 		# Escribir mensaje cifrado
-		jal escribirMensajeCifrado
+		la $a1, outputFile
+		la $a3, mensajeCifrado
+		jal escribir
 		
 		
 		#--------------------------- Decifrado --------------------------#
@@ -51,7 +53,9 @@
 		jal decifrarMensaje
 		
 		# Escribir mensaje decifrado
-		jal escribirMensajeDecifrado
+		la $a1, decodedOutputFile
+		la $a3, mensajeDecifrado
+		jal escribir
 		
 		
 		# Mostrar mensaje leido
@@ -271,11 +275,11 @@
         jr $ra
         
         
-        escribirMensajeCifrado:
+        escribir:
         
         	#--------------------------- Abrir archivo --------------------------#
         	li $v0, 13
-    		la $a0, outputFile
+    		la $a0, ($a1)
     		li $a1, 1               # 1 para escritura
     		li $a2, 0 
     		syscall
@@ -286,7 +290,7 @@
     		#--------------------------- Escribir mensaje cifrado ---------------------------#
     		li $v0, 15
     		move $a0, $s0
-    		la $a1, mensajeCifrado
+    		la $a1, ($a3)
     		lw $a2, longitudMensaje
     		syscall
     		
@@ -352,35 +356,7 @@
     		terminarDecifrado:
         
         jr $ra
-        
-        
-        escribirMensajeDecifrado:
-        
-        	#--------------------------- Abrir archivo --------------------------#
-        	li $v0, 13
-    		la $a0, decodedOutputFile
-    		li $a1, 1               # 1 para escritura
-    		li $a2, 0 
-    		syscall
-    		move $s0, $v0
-    		
-    		bltz $s0, errorHandlerDocumento
-    		
-    		#--------------------------- Escribir mensaje cifrado ---------------------------#
-    		li $v0, 15
-    		move $a0, $s0
-    		la $a1, mensajeDecifrado
-    		lw $a2, longitudMensaje
-    		syscall
-    		
-    		#-------------------------- Cerrar archivo --------------------------#
-    		li $v0, 16
-        	move $a0, $s0
-        	syscall
-        
-        jr $ra
-        
-        
+     
         
         mostrarMensaje:
         
