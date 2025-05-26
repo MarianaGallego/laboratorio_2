@@ -6,6 +6,7 @@
 	
 	textoClaveCorta: .asciiz "Ingrese la palabra que desea utilizar como clave corta (no mayor a 12 caracteres):   "
 	claveCorta: .space 12	# Cantidad maxima de caracteres en la clave corta
+	longitudClaveCorta: .word 0
 	
 	claveExtendida: .space 1024
 	
@@ -56,6 +57,8 @@
 		la $a1, decodedOutputFile
 		la $a3, mensajeDecifrado
 		jal escribir
+		
+		jal mostrarMensaje
 		
 	li $v0, 10
 	syscall
@@ -111,34 +114,6 @@
         jr $ra
         
         
-        escribir:
-        # Esta funcion se encarga de la apertura, escritura y cierre ideal para el archivo de texto
-	# a manejar dentro del codigo partir de direccion_archivo_guardar dentro de la carpeta.
-        	#--------------------------- Abrir archivo --------------------------#
-        	li $v0, 13
-    		la $a0, ($a1)
-    		li $a1, 1               # 1 para escritura
-    		li $a2, 0 
-    		syscall
-    		move $t0, $v0
-    		
-    		bltz $t0, errorHandlerDocumento
-    		
-    		#--------------------------- Escribir mensaje cifrado ---------------------------#
-    		li $v0, 15
-    		move $a0, $t0
-    		la $a1, ($a3)
-    		lw $a2, longitudMensaje
-    		syscall
-    		
-    		#-------------------------- Cerrar archivo --------------------------#
-    		li $v0, 16
-		move $a0, $t0
-       	 	syscall
-        
-        jr $ra
-        
-        
         leerClaveCorta:
         
         	li $v0, 4
@@ -147,58 +122,141 @@
 		
 		li $v0, 8
 		la $a0, claveCorta
-		li $a1, 12
+		li $a1, 1024
 		syscall
+		
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+    		
+    		jal ajustarClaveCorta
+    		
+    		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+		
+		#--------------------------- Contar caracteres ---------------------------#
+		la $t1, claveCorta
+		li $t2, 0
+
+		contarWhile:
+			lb $t3, 0($t1)
+			
+			beqz $t3, endContarWhile
+
+			addi $t1, $t1, 1
+			addi $t2, $t2, 1
+		
+			j contarWhile
+		endContarWhile:
+		
+		la $t4, longitudClaveCorta
+		sw $t2, 0($t4)
+        
+        jr $ra
+        
+        
+        ajustarClaveCorta:
+        
+		la $t0, claveCorta
+		
+		encontrarSalto:
+    			lb $t1, 0($t0)
+    			beqz $t1, eliminarSalto
+
+    			addi $t0, $t0, 1
+    			j encontrarSalto
+
+		eliminarSalto:
+    			addi $t0, $t0, -1
+    			lb $t1, 0($t0)
+    			li $t2, 10
+	
+    			beq $t1, $t2, reemplazar
+
+    			j terminarAjuste
+
+		reemplazar:
+    			sb $zero, 0($t0)
+
+		terminarAjuste:
 		
         jr $ra
         
         
         crearClaveExtendida:
         
-        	la $t6, claveExtendida
-        	la $s1, claveCorta
+        	lw $s0, longitudMensaje
+        	lw $s1, longitudClaveCorta
         	
-        	copiarClaveCorta:
-        		li $t0, 0	     
-			li $t1, 12
-			la $s1, claveCorta
-       
-     	   	recorrerClaveCorta:
-        		beq $t0, $t1, completarClaveExtendida
-    			add $t2, $s1, $t0   
-			lb $t4, 0($t2)       
+        	la $t3, claveCorta
+        	la $t4, textoClaro
+        	la $t5, claveExtendida
+        	
+        	li $t0, 0
+        	li $t1, 0
+        	li $t2, 0
+        	
+        	addi $sp, $sp, -4
+		sw $ra, 0($sp)
+    		
+    		jal copiarClaveCorta
+    		
+    		lw $ra, 0($sp)
+		addi $sp, $sp, 4
 		
-			add $t2, $t6, $t0   
-			sb $t4, 0($t2)       
-
-			addi $t0, $t0, 1  
-			j recorrerClaveCorta
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+    		
+    		jal completarClaveExtendida
+    		
+    		lw $ra, 0($sp)
+		addi $sp, $sp, 4
         
-        		completarClaveExtendida:
-       	 			la $s0, textoClaro
-				li $t0, 0		
-				li $t1, 1012
+        jr $ra
+        
+        
+        copiarClaveCorta:
+        
+        	recorrerClaveCorta:
+        	
+        		beq $t0, $s1, terminarCopiaClave
+    			lb $t6, 0($t3)
+    			sb $t6, 0($t5)
+    			addi $t3, $t3, 1
+    			addi $t5, $t5, 1
+    			addi $t0, $t0, 1
+    			addi $t2, $t2, 1
+    			
+    			j recorrerClaveCorta
+    			
+    		terminarCopiaClave:
+        
+        jr $ra
+        
+        
+        completarClaveExtendida:
+        
+        	sub $t7, $s0, $s1
     		
     		recorrerMensaje:
-    			beq $t0, $t1, terminarCompletado
+    		
+    			beq $t1, $t7, terminarCompletado
 
-			add $t2, $s0, $t0    
-			lb $t4, 0($t2)     
-	
-			add $t2, $t6, $t0
-			sb $t4, 12($t2)     
-
-			addi $t0, $t0, 1 
-			j recorrerMensaje
+    			lb $t6, 0($t4)
+    			sb $t6, 0($t5)
+    			addi $t4, $t4, 1
+    			addi $t5, $t5, 1
+    			addi $t1, $t1, 1
+    			j recorrerMensaje
 
 		terminarCompletado:
-		
-       	 jr $ra
+        
+        jr $ra
         
         
         cifrarMensaje:
         
-        	move $s2, $t6
+        	la $s0, textoClaro
+        	la $s2, claveExtendida
 		la $t6, mensajeCifrado
 		li $t0, 0              
 		lw $t1, longitudMensaje         
@@ -266,6 +324,65 @@
     		terminarDecifrado:
     		
         jr $ra
+        
+        
+        escribir:
+        # Esta funcion se encarga de la apertura, escritura y cierre ideal para el archivo de texto
+	# a manejar dentro del codigo partir de direccion_archivo_guardar dentro de la carpeta.
+        	#--------------------------- Abrir archivo --------------------------#
+        	li $v0, 13
+    		la $a0, ($a1)
+    		li $a1, 1               # 1 para escritura
+    		li $a2, 0 
+    		syscall
+    		move $t0, $v0
+    		
+    		bltz $t0, errorHandlerDocumento
+    		
+    		#--------------------------- Escribir mensaje cifrado ---------------------------#
+    		li $v0, 15
+    		move $a0, $t0
+    		la $a1, ($a3)
+    		lw $a2, longitudMensaje
+    		syscall
+    		
+    		#-------------------------- Cerrar archivo --------------------------#
+    		li $v0, 16
+		move $a0, $t0
+       	 	syscall
+        
+        jr $ra
+        
+        
+        
+        
+        mostrarMensaje:
+        
+        	li $v0, 4
+		la $a0, textoClaro
+		syscall
+		
+		lw $a0, longitudMensaje
+		li $v0, 1
+		syscall
+		
+		li $v0, 4
+		la $a0, claveCorta
+		syscall
+		
+		lw $a0, longitudClaveCorta
+		li $v0, 1
+		syscall
+		
+		li $v0, 4
+		la $a0, claveExtendida
+		syscall
+		
+		li $v0, 4
+		la $a0, mensajeCifrado
+		syscall
+        	
+    	jr $ra
      	
     		
 #--------------------------------------------- ERROR HANDLERS ---------------------------------------------#
