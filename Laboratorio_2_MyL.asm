@@ -2,7 +2,7 @@
 
 	inputFile: .asciiz "C:/Users/maria/OneDrive - Universidad de Antioquia/Escritorio/Arquitectura/2025 - 1/Arquitectura_Laboratorio 2/input.txt"
 	textoClaro: .space 1024
-	longitudMensaje: .word 0
+	longitudTexto: .word 0
 	
 	textoClaveCorta: .asciiz "Ingrese la palabra que desea utilizar como clave corta (no mayor a 12 caracteres):   "
 	claveCorta: .space 12	# Cantidad maxima de caracteres en la clave corta
@@ -11,10 +11,10 @@
 	claveExtendida: .space 1024
 	
 	outputFile: .asciiz "C:/Users/maria/OneDrive - Universidad de Antioquia/Escritorio/Arquitectura/2025 - 1/Arquitectura_Laboratorio 2/criptogram.txt"
-	mensajeCifrado: .space 1024
+	textoCifrado: .space 1024
 	
 	decodedOutputFile: .asciiz "C:/Users/maria/OneDrive - Universidad de Antioquia/Escritorio/Arquitectura/2025 - 1/Arquitectura_Laboratorio 2/decoded.txt"
-	mensajeDescifrado: .space 1024
+	textoDescifrado: .space 1024
 	
 	textoDeErrorDocumento: .asciiz "No se pudo abrir el documento"
 
@@ -23,10 +23,10 @@
 	main:
 		#--------------------------- Cifrado --------------------------#
 	
-		# Leer mensaje de inputFile
+		# Leer texto de inputFile
 		la $a1, inputFile
 		la $a3, textoClaro
-		jal leerMensaje
+		jal leerTexto
 		
 		# Leer clave corta
 		jal leerClaveCorta
@@ -34,28 +34,28 @@
 		# Crear clave extendida
 		jal crearClaveExtendida
 		
-		# Cifrar mensaje
-		jal cifrarMensaje
+		# Cifrar texto
+		jal cifrarTexto
 		
-		# Escribir mensaje cifrado
+		# Escribir texto cifrado
 		la $a1, outputFile
-		la $a3, mensajeCifrado
+		la $a3, textoCifrado
 		jal escribir
 		
 		
 		#--------------------------- Decifrado --------------------------#
 		
-		# Leer mensaje de outputFile
+		# Leer texto de outputFile
 		la $a1, outputFile
-		la $a3, mensajeCifrado
-		jal leerMensaje
+		la $a3, textoCifrado
+		jal leerTexto
 		
-		# Decifrar mensaje
-		jal descifrarMensaje
+		# Decifrar texto
+		jal descifrarTexto
 		
-		# Escribir mensaje decifrado
+		# Escribir texto descifrado
 		la $a1, decodedOutputFile
-		la $a3, mensajeDescifrado
+		la $a3, textoDescifrado
 		jal escribir
 		
 	li $v0, 10
@@ -70,18 +70,18 @@
 	#	- Recibe a traves de $a1 una direccion de archivo de
 	#	  texto para abrir, leer y cerrar utilizando
 	#	  los SYSCALL 13, 14 y 16 respectivamente
-	#	- Almacena el mensaje leido en el buffer que se le
+	#	- Almacena el texto leido en el buffer que se le
 	#	  pasa como argumento a traves de $a3
 	#	- Contiene un error handler para dejarle saber al
 	#	  usuario si el archivo indicado no se pudo abrir
 	#	- Como al leer el archivo, $v0 almacena el total de
 	#	  caracteres leidos, entonces este valor se almacena
-	#	  en el buffer longitudMensaje
+	#	  en el buffer longitudTexto
 	#
 	# Entradas:
 	#	$a1: contiene la dirección del archivo de texto que se va a leer
-	#	$a3: contiene en buffer en donde se almacenará el mensaje leido
-	leerMensaje:
+	#	$a3: contiene en buffer en donde se almacenará el texto leido
+	leerTexto:
 	
 		#--------------------------- Abrir archivo --------------------------#	
     		li $v0, 13
@@ -101,7 +101,7 @@
     		syscall
     		move $s0, $v0
     		
-    		la $t1, longitudMensaje
+    		la $t1, longitudTexto
 		sw $s0, 0($t1)
     		
     		#-------------------------- Cerrar archivo --------------------------#
@@ -118,7 +118,7 @@
 	#	  los SYSCALL 13, 15 y 16 respectivamente
 	#	- Contiene un error handler para dejarle saber al
 	#	  usuario si el archivo indicado no se pudo abrir
-	#	- $a2 almacena el contenido de longitudMensaje y
+	#	- $a2 almacena el contenido de longitudTexto y
 	#	  se utiliza para controlar cuantos caracteres se
 	#	  deben escribir
 	#
@@ -137,11 +137,11 @@
     		
     		bltz $t0, errorHandlerDocumento
     		
-    		#--------------------------- Escribir mensaje cifrado ---------------------------#
+    		#--------------------------- Escribir texto cifrado ---------------------------#
     		li $v0, 15
     		move $a0, $t0
     		la $a1, ($a3)
-    		lw $a2, longitudMensaje
+    		lw $a2, longitudTexto
     		syscall
     		
     		#-------------------------- Cerrar archivo --------------------------#
@@ -250,7 +250,7 @@
 	#	  que se utilizaran en las funciones invocadas
         crearClaveExtendida:
         
-        	lw $s0, longitudMensaje
+        	lw $s0, longitudTexto
         	lw $s1, longitudClaveCorta
         	
         	la $t3, claveCorta
@@ -348,15 +348,15 @@
 	#   	$t1: longitusMensaje (límite del bucle)
 	#   	$t2, $t3: resultado de operaciones aritmeticas
 	#   	$t4, $t5: almacenamiento de caracteres extraidos
-	#   	$t6: dirección base del mensajeCifrado (salida)
+	#   	$t6: dirección base del textoCifrado (salida)
 	#   	$t7: constante 128
-        cifrarMensaje:
+        cifrarTexto:
         
         	la $s0, textoClaro
         	la $s2, claveExtendida
-		la $t6, mensajeCifrado
+		la $t6, textoCifrado
 		li $t0, 0              
-		lw $t1, longitudMensaje         
+		lw $t1, longitudTexto         
 		li $t7, 128
 		
         	recorrerTextoClaro:
@@ -385,30 +385,30 @@
                
         # Descripción:
 	#	- Se encarga de descifrar cada caracter que esta en el
-	#	  buffer mensajeCifrado
+	#	  buffer textoCifrado
 	#	- Utiliza el ciclo recorrerTextoCifrado para recorrer
-	#	  el buffer mensajeCifrado y a su vez va formando la
+	#	  el buffer textoCifrado y a su vez va formando la
 	#	  claveExtendida  de acuerdo al caracter que vaya
 	#	  descifrando
 	#	- Descifra los caracteres utilizando la formula
 	#	  p = (c - k) mod l
 	#
 	# Registros utilizados:
-	#   $s1: direccion de mensajeCifrado
+	#   $s1: direccion de textoCifrado
 	#   $s2: direccion de claveExtendida
 	#   $t0: contador del bucle
 	#   $t1: límite del bucle
 	#   $t2, $t3: resultado de operaciones aritmeticas
 	#   $t4, $t5: almacenamiento de caracteres extraidos
-	#   $t6: dirección base del mensajeDecifrado (salida)
+	#   $t6: dirección base del textoDescifrado (salida)
 	#   $t7: constante 128                  
-        descifrarMensaje:
+        descifrarTexto:
         
-        	la $s1, mensajeCifrado
+        	la $s1, textoCifrado
 		la $s2, claveExtendida
-		la $t6, mensajeDescifrado
+		la $t6, textoDescifrado
 		li $t0, 0                  
-		lw $t1, longitudMensaje           
+		lw $t1, longitudTexto           
 		li $t7, 128
         
     		recorrerTextoCifrado:
