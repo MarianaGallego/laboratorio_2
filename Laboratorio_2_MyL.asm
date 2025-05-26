@@ -58,8 +58,6 @@
 		la $a3, mensajeDescifrado
 		jal escribir
 		
-		jal mostrarMensaje
-		
 	li $v0, 10
 	syscall
 		
@@ -70,7 +68,7 @@
 	
 	# Descripción:
 	#	- Recibe a traves de $a1 una direccion de archivo de
-	#	  texto para abrir, leer y cierrar utilizando
+	#	  texto para abrir, leer y cerrar utilizando
 	#	  los SYSCALL 13, 14 y 16 respectivamente
 	#	- Almacena el mensaje leido en el buffer que se le
 	#	  pasa como argumento a traves de $a3
@@ -114,9 +112,21 @@
         jr $ra
         
         
+        # Descripción:
+	#	- Recibe a traves de $a1 una direccion de archivo de
+	#	  texto para abrir, escribir y cerrar utilizando
+	#	  los SYSCALL 13, 15 y 16 respectivamente
+	#	- Contiene un error handler para dejarle saber al
+	#	  usuario si el archivo indicado no se pudo abrir
+	#	- $a2 almacena el contenido de longitudMensaje y
+	#	  se utiliza para controlar cuantos caracteres se
+	#	  deben escribir
+	#
+	# Entradas:
+	#	$a1: contiene la dirección del archivo de texto en el que se va a escribir
+	#	$a3: contiene en buffer que almacena los caracteres que se escribiran
         escribir:
-        # Esta funcion se encarga de la apertura, escritura y cierre ideal para el archivo de texto
-	# a manejar dentro del codigo partir de direccion_archivo_guardar dentro de la carpeta.
+        
         	#--------------------------- Abrir archivo --------------------------#
         	li $v0, 13
     		la $a0, ($a1)
@@ -142,6 +152,20 @@
         jr $ra
         
         
+        # Descripción:
+	#	- Utiliza el SYSCALL 4 para mostrarle al usuario
+	#	  el texto almacenado en textoClaveCorta y pedirle
+	#	  que ingrese la clave que desea usar
+	#	- Utiliza el SYSCALL 8 para leer el string ingresado
+	#	  por el usuario
+	#	- Llama la funcion ajustarClaveCorta, y para esto le
+	#	  resta -4 a $sp y en ese espacio almacena $ra que es
+	#	  la direccion de memoria a la que debe volver cuando
+	#	  termine de ejecutar la funcion
+	#	- Utiliza el ciclo contarWhile para recorrer los
+	#	  caracteres que acaba de leer y cuando termina de
+	#	  contarlos, almacena la cantidad obtenida en el
+	#	  espacio de memoria longitudClaveCorta
         leerClaveCorta:
         
         	li $v0, 4
@@ -182,6 +206,10 @@
         jr $ra
         
         
+        # Descripción:
+	#	- Elimina el salto de linea que se almaceno
+	#	  al final de la clave corta
+	#	-Pone un cero como ultimo caracter
         ajustarClaveCorta:
         
 		la $t0, claveCorta
@@ -210,6 +238,16 @@
         jr $ra
         
         
+        # Descripción:
+	#	- Llama las funciones copiarClaveCorta y
+	#	  completarClaveExtendida que son las que se
+	#	  encargan de conformar la clave extendida
+	#	- Para cada llamado le resta -4 a $sp y en
+	#	  ese espacio almacena $ra que es la direccion
+	#	  de memoria a la que debe volver cuando
+	#	  termine de ejecutar cada funcion
+	#	- Aqui se le da valor a todos los parametros
+	#	  que se utilizaran en las funciones invocadas
         crearClaveExtendida:
         
         	lw $s0, longitudMensaje
@@ -242,6 +280,10 @@
         jr $ra
         
         
+        # Descripción:
+	#	- Recorre el buffer que contiene la clave
+	#	  corta y va copiando cada caracter en el
+	#	  buffer claveExtendida
         copiarClaveCorta:
         
         	recorrerClaveCorta:
@@ -261,6 +303,14 @@
         jr $ra
         
         
+        # Descripción:
+	#	- Resta $s0 y $s1 para saber cuantos caracteres
+	#	  del textoClaro debe tomar
+	#	- Recorre el bufer que contiene el texto claro
+	#	  y va almacenando los caracteres en el buffer
+	#	  que contiene la calve extendida. El recorrido
+	#	  termina cuando el contador $t1 es igual al
+	#	  numero calculado de caracteres que debe tomar
         completarClaveExtendida:
         
         	sub $t7, $s0, $s1
@@ -281,6 +331,12 @@
         jr $ra
         
         
+        # Descripción:
+	#	- Se encarga de cifrar cada caracter que esta en el
+	#	  buffer textoClaro
+	#	- Utiliza el ciclo recorrerTextoClaro para recorrer
+	#	  el buffer textoClaro y lo encripta utilizando la
+	#	  formula c = (m + k) mod l
         cifrarMensaje:
         
         	la $s0, textoClaro
@@ -342,6 +398,7 @@
 			addi $t3, $t3, 128
 			rem $t3, $t3, $t7	
 		
+			#sb $t3, 12($t2)
 		
 			add $t2, $t6, $t0
 			sb $t3, 0($t2)
@@ -352,37 +409,6 @@
     		terminarDescifrado:
     		
         jr $ra
-        
-        
-        
-        
-        mostrarMensaje:
-        
-        	li $v0, 4
-		la $a0, textoClaro
-		syscall
-		
-		lw $a0, longitudMensaje
-		li $v0, 1
-		syscall
-		
-		li $v0, 4
-		la $a0, claveCorta
-		syscall
-		
-		lw $a0, longitudClaveCorta
-		li $v0, 1
-		syscall
-		
-		li $v0, 4
-		la $a0, claveExtendida
-		syscall
-		
-		li $v0, 4
-		la $a0, mensajeCifrado
-		syscall
-        	
-    	jr $ra
      	
     		
 #--------------------------------------------- ERROR HANDLERS ---------------------------------------------#
