@@ -16,7 +16,7 @@
 	decodedOutputFile: .asciiz "C:/Users/maria/OneDrive - Universidad de Antioquia/Escritorio/Arquitectura/2025 - 1/Arquitectura_Laboratorio 2/decoded.txt"
 	mensajeDescifrado: .space 1024
 	
-	textoDeErrorDocumento: .asciiz "No se pudo leer el documento"
+	textoDeErrorDocumento: .asciiz "No se pudo abrir el documento"
 
 .text
 
@@ -308,9 +308,12 @@
 	#	  del textoClaro debe tomar
 	#	- Recorre el bufer que contiene el texto claro
 	#	  y va almacenando los caracteres en el buffer
-	#	  que contiene la calve extendida. El recorrido
-	#	  termina cuando el contador $t1 es igual al
-	#	  numero calculado de caracteres que debe tomar
+	#	  que contiene la clave extendida a partir de
+	#	  la posicion dada por $t5, que contiene la 
+	#	  posicion siguiente a la ultima posicion en
+	#	  la que se almaceno un caracter.
+	#	  El recorrido termina cuando el contador $t1 es 
+	#	  igual al numero calculado de caracteres que debe tomar
         completarClaveExtendida:
         
         	sub $t7, $s0, $s1
@@ -335,8 +338,18 @@
 	#	- Se encarga de cifrar cada caracter que esta en el
 	#	  buffer textoClaro
 	#	- Utiliza el ciclo recorrerTextoClaro para recorrer
-	#	  el buffer textoClaro y lo encripta utilizando la
-	#	  formula c = (m + k) mod l
+	#	  los buffer textoClaro y claveExtendida y cifra
+	#	  los caracteres utilizando la formula c = (m + k) mod l
+	#
+	# Registros utilizados:
+	#   	$s0: direccion de textoClaro
+	#   	$s2: direccion de claveExtendida
+	#   	$t0: contador del bucle
+	#   	$t1: longitusMensaje (límite del bucle)
+	#   	$t2, $t3: resultado de operaciones aritmeticas
+	#   	$t4, $t5: almacenamiento de caracteres extraidos
+	#   	$t6: dirección base del mensajeCifrado (salida)
+	#   	$t7: constante 128
         cifrarMensaje:
         
         	la $s0, textoClaro
@@ -370,35 +383,51 @@
         jr $ra
         
                
-                             
+        # Descripción:
+	#	- Se encarga de descifrar cada caracter que esta en el
+	#	  buffer mensajeCifrado
+	#	- Utiliza el ciclo recorrerTextoCifrado para recorrer
+	#	  el buffer mensajeCifrado y a su vez va formando la
+	#	  claveExtendida  de acuerdo al caracter que vaya
+	#	  descifrando
+	#	- Descifra los caracteres utilizando la formula
+	#	  p = (c - k) mod l
+	#
+	# Registros utilizados:
+	#   $s1: direccion de mensajeCifrado
+	#   $s2: direccion de claveExtendida
+	#   $t0: contador del bucle
+	#   $t1: límite del bucle
+	#   $t2, $t3: resultado de operaciones aritmeticas
+	#   $t4, $t5: almacenamiento de caracteres extraidos
+	#   $t6: dirección base del mensajeDecifrado (salida)
+	#   $t7: constante 128                  
         descifrarMensaje:
         
-        	la $s0, mensajeCifrado
+        	la $s1, mensajeCifrado
 		la $s2, claveExtendida
 		la $t6, mensajeDescifrado
 		li $t0, 0                  
 		lw $t1, longitudMensaje           
 		li $t7, 128
         
-    		
     		recorrerTextoCifrado:
-    		
     			beq $t0, $t1, terminarDescifrado
 	
-		
-			add $t2, $s0, $t0
+			add $t2, $s1, $t0
 			lb $t4, 0($t2)
 	
-		
 			add $t2, $s2, $t0
 			lb $t5, 0($t2)
 	
-		
 			sub $t3, $t4, $t5
 			addi $t3, $t3, 128
-			rem $t3, $t3, $t7	
-		
-			#sb $t3, 12($t2)
+			rem $t3, $t3, $t7
+			
+			lw $t2, longitudClaveCorta
+			add $t2, $s2, $t2
+			add $t2, $t2, $t0
+			sb $t3, 0($t2) 	
 		
 			add $t2, $t6, $t0
 			sb $t3, 0($t2)
@@ -407,12 +436,17 @@
 			j recorrerTextoCifrado
     			
     		terminarDescifrado:
-    		
         jr $ra
      	
     		
 #--------------------------------------------- ERROR HANDLERS ---------------------------------------------#
 
+	# Descripción:
+	#	- Utiliza el SYSCALL 4 para mostrar los caracteres
+	#	  almacenados en textoDeErrorDocumento, indicandole
+	#	  al usuario que el archivo no se pudo abrir
+	#	- Utiliza el SYSCALL 10 para terminar la ejecucion
+	#	  del programa
 	errorHandlerDocumento:
 		li $v0, 4
     		la $a0, textoDeErrorDocumento
