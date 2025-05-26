@@ -375,7 +375,8 @@
 			add $t2, $t6, $t0
 			sb $t3, 0($t2)
 	
-			addi $t0, $t0, 1    
+			addi $t0, $t0, 1   
+			 
 			j recorrerTextoClaro
     			
 		terminarCifrado:
@@ -410,8 +411,10 @@
 		li $t0, 0                  
 		lw $t1, longitudTexto           
 		li $t7, 128
+		li $t8, 0
         
     		recorrerTextoCifrado:
+    		
     			beq $t0, $t1, terminarDescifrado
 	
 			add $t2, $s1, $t0
@@ -424,15 +427,24 @@
 			addi $t3, $t3, 128
 			rem $t3, $t3, $t7
 			
-			lw $t2, longitudClaveCorta
-			add $t2, $s2, $t2
-			add $t2, $t2, $t0
-			sb $t3, 0($t2) 	
+			rellenarClaveExtendida:	
+						
+				lw $t2, longitudClaveCorta
+				
+				beq $t2, $t8, claveCompleta
+				
+				add $t2, $s2, $t2
+				add $t2, $t2, $t0
+				sb $t3, 0($t2)
+				addi $t8, $t8, 1
+				
+			claveCompleta:	
 		
 			add $t2, $t6, $t0
 			sb $t3, 0($t2)
 	
 			addi $t0, $t0, 1
+			
 			j recorrerTextoCifrado
     			
     		terminarDescifrado:
