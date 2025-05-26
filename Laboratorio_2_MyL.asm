@@ -57,29 +57,46 @@
 		la $a3, mensajeDecifrado
 		jal escribir
 		
-	j Exit
+	li $v0, 10
+	syscall
 		
+	
 		
+				
 #---------------------------------------- DECLARACION DE FUNCIONES ----------------------------------------#
-		
+	
+	# Descripción:
+	#	- Recibe a traves de $a1 una direccion de archivo de
+	#	  texto para abrir, leer y cierrar utilizando
+	#	  los SYSCALL 13, 14 y 16 respectivamente
+	#	- Almacena el mensaje leido en el buffer que se le
+	#	  pasa como argumento a traves de $a3
+	#	- Contiene un error handler para dejarle saber al
+	#	  usuario si el archivo indicado no se pudo abrir
+	#	- Como al leer el archivo, $v0 almacena el total de
+	#	  caracteres leidos, entonces este valor se almacena
+	#	  en el buffer longitudMensaje
+	#
+	# Entradas:
+	#	$a1: contiene la dirección del archivo de texto que se va a leer
+	#	$a3: contiene en buffer en donde se almacenará el mensaje leido
 	leerMensaje:
-	# Esta funcion se encarga de la apertura, lectura y cierre ideal para el archivo de texto manejar 
-	# a apartir de direccion_archivo_abrir dentro de la carpeta.
+	
 		#--------------------------- Abrir archivo --------------------------#	
-    		li $v0, 13	# syscall 13 para la apertura de archivos
-    		la $a0, ($a1)	# cargar direccion del archivo en $a0
-    		li $a1, 0	# modo lecutra
-    		li $a2, 0	# modo normal
+    		li $v0, 13
+    		la $a0, ($a1)
+    		li $a1, 0
+    		li $a2, 0
     		syscall
-    		move $t0, $v0	# copiar el puntero del archivo a $t0
+    		move $t0, $v0
 
     		bltz $t0, errorHandlerDocumento
     		
     		#--------------------------- Leer archivo ---------------------------#
-    		li $v0, 14		# syscall 14 para la lectura de archivos
-    		move $a0, $t0		# copiar el puntero del archivo en $a0
-    		la $a1, ($a3) 	# 
-    		li $a2, 1024		# limite de lectura de 1024 palabras
+    		li $v0, 14
+    		move $a0, $t0
+    		la $a1, ($a3)
+    		li $a2, 1024
     		syscall
     		move $s0, $v0
     		
@@ -185,7 +202,7 @@
 		la $t6, mensajeCifrado
 		li $t0, 0              
 		lw $t1, longitudMensaje         
-		li $t7, 127
+		li $t7, 128
 		
         	recorrerTextoClaro:
         	
@@ -219,7 +236,7 @@
 		la $t6, mensajeDecifrado
 		li $t0, 0                  
 		lw $t1, longitudMensaje           
-		li $t7, 127
+		li $t7, 128
         
     		
     		recorrerTextoCifrado:
@@ -236,10 +253,8 @@
 	
 		
 			sub $t3, $t4, $t5
-			addi $t3, $t3, 127
-			rem $t3, $t3, $t7
-	
-			#sb $t3, 12($t2)	
+			addi $t3, $t3, 128
+			rem $t3, $t3, $t7	
 		
 		
 			add $t2, $t6, $t0
@@ -264,8 +279,3 @@
     		syscall
     		
 	jr $ra
-	
-	
-	Exit:
-		li $v0, 10 
-		syscall
