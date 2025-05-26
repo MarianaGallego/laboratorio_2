@@ -14,7 +14,7 @@
 	mensajeCifrado: .space 1024
 	
 	decodedOutputFile: .asciiz "C:/Users/maria/OneDrive - Universidad de Antioquia/Escritorio/Arquitectura/2025 - 1/Arquitectura_Laboratorio 2/decoded.txt"
-	mensajeDecifrado: .space 1024
+	mensajeDescifrado: .space 1024
 	
 	textoDeErrorDocumento: .asciiz "No se pudo leer el documento"
 
@@ -51,11 +51,11 @@
 		jal leerMensaje
 		
 		# Decifrar mensaje
-		jal decifrarMensaje
+		jal descifrarMensaje
 		
 		# Escribir mensaje decifrado
 		la $a1, decodedOutputFile
-		la $a3, mensajeDecifrado
+		la $a3, mensajeDescifrado
 		jal escribir
 		
 		jal mostrarMensaje
@@ -111,6 +111,34 @@
         	move $a0, $t0
         	syscall
         	
+        jr $ra
+        
+        
+        escribir:
+        # Esta funcion se encarga de la apertura, escritura y cierre ideal para el archivo de texto
+	# a manejar dentro del codigo partir de direccion_archivo_guardar dentro de la carpeta.
+        	#--------------------------- Abrir archivo --------------------------#
+        	li $v0, 13
+    		la $a0, ($a1)
+    		li $a1, 1               # 1 para escritura
+    		li $a2, 0 
+    		syscall
+    		move $t0, $v0
+    		
+    		bltz $t0, errorHandlerDocumento
+    		
+    		#--------------------------- Escribir mensaje cifrado ---------------------------#
+    		li $v0, 15
+    		move $a0, $t0
+    		la $a1, ($a3)
+    		lw $a2, longitudMensaje
+    		syscall
+    		
+    		#-------------------------- Cerrar archivo --------------------------#
+    		li $v0, 16
+		move $a0, $t0
+       	 	syscall
+        
         jr $ra
         
         
@@ -287,11 +315,11 @@
         
                
                              
-        decifrarMensaje:
+        descifrarMensaje:
         
         	la $s0, mensajeCifrado
 		la $s2, claveExtendida
-		la $t6, mensajeDecifrado
+		la $t6, mensajeDescifrado
 		li $t0, 0                  
 		lw $t1, longitudMensaje           
 		li $t7, 128
@@ -299,7 +327,7 @@
     		
     		recorrerTextoCifrado:
     		
-    			beq $t0, $t1, terminarDecifrado
+    			beq $t0, $t1, terminarDescifrado
 	
 		
 			add $t2, $s0, $t0
@@ -321,36 +349,8 @@
 			addi $t0, $t0, 1
 			j recorrerTextoCifrado
     			
-    		terminarDecifrado:
+    		terminarDescifrado:
     		
-        jr $ra
-        
-        
-        escribir:
-        # Esta funcion se encarga de la apertura, escritura y cierre ideal para el archivo de texto
-	# a manejar dentro del codigo partir de direccion_archivo_guardar dentro de la carpeta.
-        	#--------------------------- Abrir archivo --------------------------#
-        	li $v0, 13
-    		la $a0, ($a1)
-    		li $a1, 1               # 1 para escritura
-    		li $a2, 0 
-    		syscall
-    		move $t0, $v0
-    		
-    		bltz $t0, errorHandlerDocumento
-    		
-    		#--------------------------- Escribir mensaje cifrado ---------------------------#
-    		li $v0, 15
-    		move $a0, $t0
-    		la $a1, ($a3)
-    		lw $a2, longitudMensaje
-    		syscall
-    		
-    		#-------------------------- Cerrar archivo --------------------------#
-    		li $v0, 16
-		move $a0, $t0
-       	 	syscall
-        
         jr $ra
         
         
