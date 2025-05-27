@@ -137,7 +137,7 @@
     		
     		bltz $t0, errorHandlerDocumento
     		
-    		#--------------------------- Escribir texto cifrado ---------------------------#
+    		#---------------------- Escribir texto cifrado ----------------------#
     		li $v0, 15
     		move $a0, $t0
     		la $a1, ($a3)
@@ -318,7 +318,7 @@
         
         	sub $t7, $s0, $s1
     		
-    		recorrerMensaje:
+    		recorrerTexto:
     		
     			beq $t1, $t7, terminarCompletado
 
@@ -327,7 +327,7 @@
     			addi $t4, $t4, 1
     			addi $t5, $t5, 1
     			addi $t1, $t1, 1
-    			j recorrerMensaje
+    			j recorrerTexto
 
 		terminarCompletado:
         
